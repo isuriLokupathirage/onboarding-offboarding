@@ -18,7 +18,17 @@ const upcoming = [
   { name: 'Chamari', initials: 'CN', kind: 'Offboarding', when: 'In 12 days', ready: 25 },
 ];
 
-const taskGroups = [
+interface TaskItem {
+  task: string;
+  employee: string;
+  due: string;
+  overdue?: boolean;
+  priority: string;
+  status: string;
+  blockedBy?: string;
+}
+
+const taskGroups: { title: string; tasks: TaskItem[] }[] = [
   {
     title: 'Day One',
     tasks: [

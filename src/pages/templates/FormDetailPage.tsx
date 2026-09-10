@@ -51,7 +51,7 @@ export function FormDetailPage({ startInEdit }: { startInEdit?: boolean }) {
   }
 
   function cancelEdit() {
-    setDraft(original);
+    setDraft(original ?? null);
     setEditing(false);
     setValidationError(null);
   }
