@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { clsx } from 'clsx';
 
-type Tone = 'gray' | 'green' | 'red' | 'amber' | 'blue' | 'primary';
+type Tone = 'gray' | 'green' | 'red' | 'amber' | 'blue' | 'purple' | 'primary';
 
 const tones: Record<Tone, string> = {
   gray: 'bg-black/5 text-ink-soft',
@@ -9,6 +9,7 @@ const tones: Record<Tone, string> = {
   red: 'bg-danger-bg text-danger',
   amber: 'bg-warning-bg text-warning',
   blue: 'bg-info-bg text-info',
+  purple: 'bg-purple-bg text-purple',
   primary: 'bg-primary-light text-primary-dark',
 };
 
@@ -36,6 +37,7 @@ export function Badge({
         'bg-danger': tone === 'red',
         'bg-warning': tone === 'amber',
         'bg-info': tone === 'blue',
+        'bg-purple': tone === 'purple',
         'bg-ink-soft': tone === 'gray',
         'bg-primary': tone === 'primary',
       })} />}

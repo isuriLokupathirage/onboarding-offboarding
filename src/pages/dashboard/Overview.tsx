@@ -62,7 +62,7 @@ export function Overview() {
           <div className="flex items-center gap-1 text-subtle">
             <button className="rounded-md border border-border p-1 hover:bg-black/5"><ChevronLeft size={14} /></button>
             <button className="rounded-md border border-border p-1 hover:bg-black/5"><ChevronRight size={14} /></button>
-            <button className="ml-2 text-xs font-medium text-primary hover:underline">View All</button>
+            <button className="ml-2 text-xs font-medium text-primary-text hover:underline">View All</button>
           </div>
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -74,9 +74,9 @@ export function Overview() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-ink">{t.name}</p>
-                  <Badge tone="gray" className="mt-0.5">{t.role}</Badge>
+                  <Badge tone="gray" className="mt-0.5 max-w-full truncate">{t.role}</Badge>
                 </div>
-                <Badge tone={t.kind === 'Onboarding' ? 'green' : 'red'} dot>{t.kind}</Badge>
+                <Badge tone={t.kind === 'Onboarding' ? 'green' : 'red'} dot className="shrink-0">{t.kind}</Badge>
               </div>
               <p className="text-xs text-muted">Next Task</p>
               <div className="mb-2 flex items-center justify-between">
@@ -136,7 +136,7 @@ export function Overview() {
                   <p className="text-xs text-subtle">{u.when}</p>
                   <p className="text-xs font-medium text-ink">{u.ready}% Ready</p>
                 </div>
-                <button className="text-xs font-medium text-primary hover:underline">View Tasks</button>
+                <button className="text-xs font-medium text-primary-text hover:underline">View Tasks</button>
               </div>
             ))}
           </div>

@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { X, Plus, Trash2, UploadCloud, Save } from 'lucide-react';
+import { X, Plus, Trash2, UploadCloud, Save, CheckCircle2, AlertCircle, Pencil } from 'lucide-react';
 import { FIELD_CATALOG } from '../../data/fieldCatalog';
 import { PortalField } from '../../components/portal/PortalField';
 import { Button } from '../../components/ui/Button';
@@ -73,7 +73,7 @@ export function PreviewModal({ template, onClose }: { template: FormTemplate; on
               key={t.id}
               onClick={() => setTab(t.id)}
               className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-colors ${
-                tab === t.id ? 'bg-primary text-white' : 'bg-black/5 text-ink-soft hover:bg-black/10'
+                tab === t.id ? 'bg-primary text-primary-dark' : 'bg-black/5 text-ink-soft hover:bg-black/10'
               }`}
             >
               {t.label}
@@ -93,7 +93,36 @@ export function PreviewModal({ template, onClose }: { template: FormTemplate; on
   );
 }
 
-function FormPreview({ template, civilStatus }: { template: FormTemplate; civilStatus: 'Single' | 'Married' }) {
+function SuccessPanel({
+  title,
+  description,
+  onEdit,
+}: {
+  title: string;
+  description: string;
+  onEdit: () => void;
+}) {
+  return (
+    <div className="flex flex-col items-center rounded-2xl border border-success/30 bg-white p-10 text-center shadow-sm">
+      <CheckCircle2 size={40} className="text-success" />
+      <h2 className="mt-4 text-lg font-semibold text-ink">{title}</h2>
+      <p className="mt-1.5 max-w-sm text-sm text-muted">{description}</p>
+      <Button variant="outline" size="sm" icon={<Pencil size={13} />} className="mt-5" onClick={onEdit}>
+        Make Changes
+      </Button>
+    </div>
+  );
+}
+
+export function FormPreview({ template, civilStatus }: { template: FormTemplate; civilStatus: 'Single' | 'Married' }) {
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [otherValues, setOtherValues] = useState<Record<string, string>>({});
+  const [fieldErrors, setFieldErrors] = useState<Set<string>>(new Set());
+  const [emergencyError, setEmergencyError] = useState(false);
+  const [childrenError, setChildrenError] = useState(false);
+  const [showSummaryError, setShowSummaryError] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
   const [contacts, setContacts] = useState<EmergencyEntry[]>([]);
   const [draft, setDraft] = useState({ contactName: '', contactNumber: '', relationship: '' });
   const [children, setChildren] = useState<ChildEntry[]>([]);
@@ -108,14 +137,82 @@ function FormPreview({ template, civilStatus }: { template: FormTemplate; civilS
     return sec?.fields.find((f) => f.fieldId === fieldId)?.state ?? 'hidden';
   }
 
+  function setValue(fieldId: string, v: string) {
+    setValues((prev) => ({ ...prev, [fieldId]: v }));
+    setFieldErrors((prev) => {
+      if (!prev.has(fieldId)) return prev;
+      const next = new Set(prev);
+      next.delete(fieldId);
+      return next;
+    });
+  }
+
   function addContact() {
     if (!draft.contactNumber && !draft.contactName) return;
     setContacts((c) => [...c, { id: `c-${Date.now()}`, ...draft }]);
     setDraft({ contactName: '', contactNumber: '', relationship: '' });
+    setEmergencyError(false);
   }
 
   function addChild() {
     setChildren((c) => [...c, { id: `ch-${Date.now()}`, name: '', dob: '' }]);
+    setChildrenError(false);
+  }
+
+  function handleSave() {
+    const nextErrors = new Set<string>();
+
+    for (const { sectionDef } of enabledSections) {
+      if (sectionDef.id === 'emergency') continue;
+      const fieldsToCheck =
+        sectionDef.conditional === 'insurance'
+          ? sectionDef.fields.filter((f) =>
+              civilStatus === 'Single' ? f.id.startsWith('parent') : f.id.startsWith('spouse'),
+            )
+          : sectionDef.fields;
+      for (const f of fieldsToCheck) {
+        const state = fieldState(sectionDef.id, f.id);
+        if (state !== 'required') continue;
+        const val = values[f.id] ?? '';
+        if (!val.trim()) {
+          nextErrors.add(f.id);
+        } else if (f.hasOtherOption && val === 'Other' && !(otherValues[f.id] ?? '').trim()) {
+          nextErrors.add(f.id);
+        }
+      }
+    }
+
+    const emergencySection = FIELD_CATALOG.find((s) => s.id === 'emergency')!;
+    const emergencyEnabled = template.sections.find((s) => s.sectionId === 'emergency')?.enabled;
+    const emergencyRequired =
+      !!emergencyEnabled && emergencySection.fields.some((f) => fieldState('emergency', f.id) === 'required');
+    const emergencyFailed = emergencyRequired && contacts.length === 0;
+
+    const childrenRequired = civilStatus === 'Married' && fieldState('insurance', 'children') === 'required';
+    const childrenFailed = childrenRequired && children.length === 0;
+
+    setFieldErrors(nextErrors);
+    setEmergencyError(emergencyFailed);
+    setChildrenError(childrenFailed);
+
+    if (nextErrors.size === 0 && !emergencyFailed && !childrenFailed) {
+      setShowSummaryError(false);
+      setSubmitted(true);
+    } else {
+      setShowSummaryError(true);
+    }
+  }
+
+  if (submitted) {
+    return (
+      <div className="mx-auto max-w-2xl">
+        <SuccessPanel
+          title="Details Saved"
+          description="Thanks — your profile details have been saved. You can come back and update them any time before your first day."
+          onEdit={() => setSubmitted(false)}
+        />
+      </div>
+    );
   }
 
   return (
@@ -127,6 +224,13 @@ function FormPreview({ template, civilStatus }: { template: FormTemplate; civilS
           possible, let's get your profile set up together.
         </p>
       </div>
+
+      {showSummaryError && (
+        <div className="mb-4 flex items-center gap-2 rounded-xl border border-danger/30 bg-danger-bg px-4 py-3 text-sm text-danger">
+          <AlertCircle size={16} className="shrink-0" />
+          Please fill in the required fields marked below before saving.
+        </div>
+      )}
 
       <div className="space-y-6 rounded-2xl border border-border bg-white p-6 shadow-sm">
         {enabledSections.map(({ sectionDef }) => {
@@ -143,7 +247,16 @@ function FormPreview({ template, civilStatus }: { template: FormTemplate; civilS
                 </h2>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   {groupFields.map((f) => (
-                    <PortalField key={f.id} field={f} state={fieldState('insurance', f.id)} />
+                    <PortalField
+                      key={f.id}
+                      field={f}
+                      state={fieldState('insurance', f.id)}
+                      value={values[f.id] ?? ''}
+                      onChange={(v) => setValue(f.id, v)}
+                      otherValue={otherValues[f.id]}
+                      onOtherChange={(v) => setOtherValues((prev) => ({ ...prev, [f.id]: v }))}
+                      error={fieldErrors.has(f.id)}
+                    />
                   ))}
                 </div>
                 {civilStatus === 'Married' && childrenState !== 'hidden' && (
@@ -174,6 +287,7 @@ function FormPreview({ template, civilStatus }: { template: FormTemplate; civilS
                         ))}
                       </div>
                     )}
+                    {childrenError && <p className="mt-1.5 text-xs text-danger">Add at least one child.</p>}
                   </div>
                 )}
               </div>
@@ -224,6 +338,9 @@ function FormPreview({ template, civilStatus }: { template: FormTemplate; civilS
                     ))}
                   </div>
                 )}
+                {emergencyError && (
+                  <p className="mt-1.5 text-xs text-danger">Add at least one emergency contact.</p>
+                )}
               </div>
             );
           }
@@ -238,6 +355,11 @@ function FormPreview({ template, civilStatus }: { template: FormTemplate; civilS
                     field={f}
                     state={fieldState(sectionDef.id, f.id)}
                     span2={f.kind === 'textarea'}
+                    value={values[f.id] ?? ''}
+                    onChange={(v) => setValue(f.id, v)}
+                    otherValue={otherValues[f.id]}
+                    onOtherChange={(v) => setOtherValues((prev) => ({ ...prev, [f.id]: v }))}
+                    error={fieldErrors.has(f.id)}
                   />
                 ))}
               </div>
@@ -252,16 +374,20 @@ function FormPreview({ template, civilStatus }: { template: FormTemplate; civilS
         )}
       </div>
 
-      <div className="mt-6 flex justify-end">
-        <Button icon={<Save size={15} />} disabled>Save Details</Button>
-      </div>
+      {enabledSections.length > 0 && (
+        <div className="mt-6 flex justify-end">
+          <Button icon={<Save size={15} />} onClick={handleSave}>Save Details</Button>
+        </div>
+      )}
     </div>
   );
 }
 
-function DocumentsPreview({ template }: { template: FormTemplate }) {
+export function DocumentsPreview({ template }: { template: FormTemplate }) {
   const [files, setFiles] = useState<Record<string, File[]>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitted, setSubmitted] = useState(false);
+  const [showSummaryError, setShowSummaryError] = useState(false);
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const sorted = useMemo(() => [...template.documents].sort((a, b) => a.order - b.order), [template.documents]);
@@ -307,6 +433,36 @@ function DocumentsPreview({ template }: { template: FormTemplate }) {
     setErrors((e) => ({ ...e, [docId]: '' }));
   }
 
+  function handleSubmit() {
+    const nextErrors: Record<string, string> = { ...errors };
+    let hasMissing = false;
+    for (const doc of sorted) {
+      if (doc.requirement === 'required' && (files[doc.id]?.length ?? 0) === 0) {
+        nextErrors[doc.id] = 'This document is required.';
+        hasMissing = true;
+      }
+    }
+    setErrors(nextErrors);
+    if (!hasMissing) {
+      setShowSummaryError(false);
+      setSubmitted(true);
+    } else {
+      setShowSummaryError(true);
+    }
+  }
+
+  if (submitted) {
+    return (
+      <div className="mx-auto max-w-2xl">
+        <SuccessPanel
+          title="Documents Submitted"
+          description="Thanks — we've received your documents. Our HR team will review them and reach out if anything else is needed."
+          onEdit={() => setSubmitted(false)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-2xl">
       <div className="mb-8 text-center">
@@ -316,6 +472,13 @@ function DocumentsPreview({ template }: { template: FormTemplate }) {
           clear photo with your phone or upload PDFs.
         </p>
       </div>
+
+      {showSummaryError && (
+        <div className="mb-4 flex items-center gap-2 rounded-xl border border-danger/30 bg-danger-bg px-4 py-3 text-sm text-danger">
+          <AlertCircle size={16} className="shrink-0" />
+          Please upload every required document before submitting.
+        </div>
+      )}
 
       <div className="space-y-5 rounded-2xl border border-border bg-white p-6 shadow-sm">
         {sorted.length === 0 && (
@@ -353,7 +516,9 @@ function DocumentsPreview({ template }: { template: FormTemplate }) {
               {doc.multiple ? (
                 <button
                   onClick={() => inputRefs.current[doc.id]?.click()}
-                  className="flex w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border bg-black/[0.02] py-6 text-xs text-subtle hover:border-primary hover:text-primary"
+                  className={`flex w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed py-6 text-xs hover:border-primary-text hover:text-primary-text ${
+                    errors[doc.id] ? 'border-danger text-danger' : 'border-border bg-black/[0.02] text-subtle'
+                  }`}
                 >
                   <UploadCloud size={20} />
                   Click to select files
@@ -361,7 +526,9 @@ function DocumentsPreview({ template }: { template: FormTemplate }) {
               ) : (
                 <button
                   onClick={() => inputRefs.current[doc.id]?.click()}
-                  className="flex items-center gap-2 rounded-lg border border-border bg-black/[0.02] px-3 py-2 text-sm text-ink-soft hover:border-primary"
+                  className={`flex items-center gap-2 rounded-lg border bg-black/[0.02] px-3 py-2 text-sm hover:border-primary ${
+                    errors[doc.id] ? 'border-danger' : 'border-border text-ink-soft'
+                  }`}
                 >
                   <span className="rounded-md bg-white px-2 py-1 text-xs font-medium shadow-sm">Choose File</span>
                   {list[0]?.name ?? 'No file chosen'}
@@ -387,9 +554,11 @@ function DocumentsPreview({ template }: { template: FormTemplate }) {
         })}
       </div>
 
-      <div className="mt-6 flex justify-end">
-        <Button icon={<Save size={15} />} disabled>Submit Documents</Button>
-      </div>
+      {sorted.length > 0 && (
+        <div className="mt-6 flex justify-end">
+          <Button icon={<Save size={15} />} onClick={handleSubmit}>Submit Documents</Button>
+        </div>
+      )}
     </div>
   );
 }

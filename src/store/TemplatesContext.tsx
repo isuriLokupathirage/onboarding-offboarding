@@ -1,15 +1,19 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { SEED_TEMPLATES, nextCode } from '../data/templates';
-import { defaultSections } from '../data/templates';
-import type { FormTemplate, EmploymentType } from '../types';
+import type { FormTemplate } from '../types';
 
-const STORAGE_KEY = 'obo-prototype-templates-v1';
+const STORAGE_KEY = 'obo-prototype-templates-v2';
+
+type NewTemplateInput = Pick<
+  FormTemplate,
+  'name' | 'description' | 'employmentTypes' | 'sections' | 'documents'
+>;
 
 interface TemplatesContextValue {
   templates: FormTemplate[];
   getTemplate: (id: string) => FormTemplate | undefined;
-  createTemplate: (name: string, employmentType: EmploymentType) => FormTemplate;
+  createTemplate: (input: NewTemplateInput) => FormTemplate;
   saveTemplate: (
     updated: FormTemplate,
   ) => { mode: 'updated' | 'cloned'; template: FormTemplate };
@@ -20,10 +24,22 @@ interface TemplatesContextValue {
 
 const TemplatesContext = createContext<TemplatesContextValue | undefined>(undefined);
 
+function isValidShape(templates: unknown): templates is FormTemplate[] {
+  return (
+    Array.isArray(templates) &&
+    templates.every(
+      (t) => t && typeof t === 'object' && Array.isArray((t as FormTemplate).employmentTypes),
+    )
+  );
+}
+
 function load(): FormTemplate[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as FormTemplate[];
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (isValidShape(parsed)) return parsed;
+    }
   } catch {
     // ignore corrupt storage
   }
@@ -40,19 +56,16 @@ export function TemplatesProvider({ children }: { children: ReactNode }) {
   const value = useMemo<TemplatesContextValue>(() => {
     const getTemplate = (id: string) => templates.find((t) => t.id === id);
 
-    const createTemplate = (name: string, employmentType: EmploymentType) => {
+    const createTemplate = (input: NewTemplateInput) => {
       const codes = templates.map((t) => t.code);
       const tpl: FormTemplate = {
+        ...input,
         id: `tpl-${Date.now()}`,
-        code: nextCode('ACX', codes),
-        name,
-        employmentType,
+        code: nextCode(codes),
         status: 'Active',
         usedByTransitions: 0,
         createdAt: new Date().toISOString().slice(0, 10),
         updatedAt: new Date().toISOString().slice(0, 10),
-        sections: defaultSections(),
-        documents: [],
       };
       setTemplates((prev) => [tpl, ...prev]);
       return tpl;
@@ -66,7 +79,7 @@ export function TemplatesProvider({ children }: { children: ReactNode }) {
         const clone: FormTemplate = {
           ...updated,
           id: `tpl-${Date.now()}`,
-          code: nextCode('ACX', codes),
+          code: nextCode(codes),
           usedByTransitions: 0,
           createdAt: today,
           updatedAt: today,

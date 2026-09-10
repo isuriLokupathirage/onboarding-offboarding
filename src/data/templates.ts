@@ -12,14 +12,14 @@ export function defaultSections(): FormSectionConfig[] {
   }));
 }
 
-let seq = 100;
-export function nextCode(tenant: string, existingCodes: string[]): string {
+let seq = 4;
+export function nextCode(existingCodes: string[]): string {
   seq += 1;
   let n = seq;
-  let code = `FRM-${tenant}-${String(n).padStart(3, '0')}`;
+  let code = `FRM-${String(n).padStart(3, '0')}`;
   while (existingCodes.includes(code)) {
     n += 1;
-    code = `FRM-${tenant}-${String(n).padStart(3, '0')}`;
+    code = `FRM-${String(n).padStart(3, '0')}`;
   }
   return code;
 }
@@ -103,9 +103,10 @@ function leanContractSections(): FormSectionConfig[] {
 export const SEED_TEMPLATES: FormTemplate[] = [
   {
     id: 'tpl-1',
-    code: 'FRM-ACX-001',
+    code: 'FRM-001',
     name: 'Standard Onboarding Form',
-    employmentType: 'Full-Time',
+    description: 'General-purpose onboarding data capture form for full-time hires.',
+    employmentTypes: ['Full-Time'],
     status: 'Active',
     usedByTransitions: 3,
     createdAt: '2026-06-02',
@@ -125,9 +126,10 @@ export const SEED_TEMPLATES: FormTemplate[] = [
   },
   {
     id: 'tpl-2',
-    code: 'FRM-ACX-002',
+    code: 'FRM-002',
     name: 'Fixed-Term Contractor Onboarding',
-    employmentType: 'Contract',
+    description: 'Lean onboarding form for short-term contractors.',
+    employmentTypes: ['Contract'],
     status: 'Active',
     usedByTransitions: 0,
     createdAt: '2026-07-10',
@@ -141,9 +143,10 @@ export const SEED_TEMPLATES: FormTemplate[] = [
   },
   {
     id: 'tpl-3',
-    code: 'FRM-ACX-003',
+    code: 'FRM-003',
     name: 'Intern Onboarding',
-    employmentType: 'Internship',
+    description: 'Simplified onboarding form for internship candidates.',
+    employmentTypes: ['Internship'],
     status: 'Active',
     usedByTransitions: 1,
     createdAt: '2026-05-18',
@@ -157,9 +160,10 @@ export const SEED_TEMPLATES: FormTemplate[] = [
   },
   {
     id: 'tpl-4',
-    code: 'FRM-ACX-004',
+    code: 'FRM-004',
     name: 'Legacy Part-Time Onboarding',
-    employmentType: 'Part-Time',
+    description: 'Retired form kept for reference — still attached to past transitions.',
+    employmentTypes: ['Part-Time', 'Contract'],
     status: 'Inactive',
     usedByTransitions: 2,
     createdAt: '2025-11-04',

@@ -9,6 +9,7 @@ import { Dialog } from '../../components/ui/Dialog';
 import { FieldsTab } from './FieldsTab';
 import { DocumentsTab } from './DocumentsTab';
 import { PreviewModal } from './PreviewModal';
+import { FormWizard } from './FormWizard';
 import { canDelete, enabledFieldCount } from '../../utils/templateStats';
 import type { FormTemplate } from '../../types';
 
@@ -20,7 +21,7 @@ export function FormDetailPage({ startInEdit }: { startInEdit?: boolean }) {
 
   const original = id ? getTemplate(id) : undefined;
   const [draft, setDraft] = useState<FormTemplate | null>(original ?? null);
-  const [tab, setTab] = useState<'fields' | 'documents'>('fields');
+  const [tab, setTab] = useState<'details' | 'documents'>('details');
   const [editing, setEditing] = useState(!!startInEdit);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -36,7 +37,7 @@ export function FormDetailPage({ startInEdit }: { startInEdit?: boolean }) {
     return (
       <div className="mx-auto max-w-2xl px-8 py-16 text-center">
         <p className="text-sm text-muted">This form template doesn't exist or was deleted.</p>
-        <Button className="mt-4" onClick={() => navigate('/templates/forms')}>Back to Forms</Button>
+        <Button className="mt-4" onClick={() => navigate('/form-templates')}>Back to Form Templates</Button>
       </div>
     );
   }
@@ -57,6 +58,10 @@ export function FormDetailPage({ startInEdit }: { startInEdit?: boolean }) {
 
   function handleSave() {
     if (!draft) return;
+    if (!draft.name.trim() || draft.employmentTypes.length === 0) {
+      setValidationError('Form Name and at least one Employment Type are required.');
+      return;
+    }
     if (enabledFieldCount(draft) < 1) {
       setValidationError('At least one field must be enabled before the form can be saved.');
       return;
@@ -66,10 +71,10 @@ export function FormDetailPage({ startInEdit }: { startInEdit?: boolean }) {
     setValidationError(null);
     if (result.mode === 'cloned') {
       setSavedNotice({ mode: 'cloned', code: result.template.code });
-      navigate(`/templates/forms/${result.template.id}`);
+      navigate(`/form-templates/${result.template.id}`);
     } else {
       setSavedNotice({ mode: 'updated', code: result.template.code });
-      navigate(`/templates/forms/${result.template.id}`);
+      navigate(`/form-templates/${result.template.id}`);
     }
   }
 
@@ -78,10 +83,10 @@ export function FormDetailPage({ startInEdit }: { startInEdit?: boolean }) {
   return (
     <div className="mx-auto max-w-[1100px] px-8 py-7">
       <button
-        onClick={() => navigate('/templates/forms')}
+        onClick={() => navigate('/form-templates')}
         className="mb-3 flex items-center gap-1.5 text-xs font-medium text-muted hover:text-ink"
       >
-        <ArrowLeft size={13} /> Back to Forms
+        <ArrowLeft size={13} /> Back to Form Templates
       </button>
 
       <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
@@ -91,20 +96,22 @@ export function FormDetailPage({ startInEdit }: { startInEdit?: boolean }) {
             <Badge tone={current.status === 'Active' ? 'green' : 'gray'} dot>{current.status}</Badge>
           </div>
           <p className="mt-1 font-mono text-xs text-subtle">
-            {current.code} · {current.employmentType}
+            {current.code} · {current.employmentTypes.join(', ')}
             {usedByOthers && ` · Used by ${current.usedByTransitions} transition(s)`}
           </p>
+          {current.description && (
+            <p className="mt-1 max-w-xl text-xs text-muted">{current.description}</p>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" icon={<Eye size={14} />} onClick={() => setPreviewOpen(true)}>
-            Preview
-          </Button>
+          {!editing && (
+            <Button variant="outline" size="sm" icon={<Eye size={14} />} onClick={() => setPreviewOpen(true)}>
+              Preview
+            </Button>
+          )}
           {editing ? (
-            <>
-              <Button variant="ghost" size="sm" onClick={cancelEdit}>Cancel</Button>
-              <Button size="sm" onClick={handleSave}>Save</Button>
-            </>
+            <Button variant="ghost" size="sm" onClick={cancelEdit}>Cancel</Button>
           ) : (
             <>
               <Button
@@ -168,38 +175,42 @@ export function FormDetailPage({ startInEdit }: { startInEdit?: boolean }) {
         </div>
       )}
 
-      {validationError && (
-        <div className="mb-5 rounded-xl border border-danger/30 bg-danger-bg px-4 py-3 text-sm text-danger">
-          {validationError}
-        </div>
-      )}
-
-      <div className="mb-5 flex items-center gap-1 rounded-lg border border-border bg-white p-1 w-fit">
-        {(['fields', 'documents'] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`rounded-md px-4 py-1.5 text-sm font-medium capitalize transition-colors ${
-              tab === t ? 'bg-primary text-white' : 'text-ink-soft hover:bg-black/5'
-            }`}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'fields' ? (
-        <FieldsTab
-          sections={current.sections}
-          readOnly={!editing}
-          onChange={(sections) => setDraft((d) => (d ? { ...d, sections } : d))}
+      {editing ? (
+        <FormWizard
+          draft={draft}
+          onDraftChange={(updater) => setDraft((d) => (d ? updater(d) : d))}
+          onSave={handleSave}
+          saveLabel="Save"
+          showCode
+          validationError={validationError}
         />
       ) : (
-        <DocumentsTab
-          documents={current.documents}
-          readOnly={!editing}
-          onChange={(documents) => setDraft((d) => (d ? { ...d, documents } : d))}
-        />
+        <>
+          <div className="mb-5 flex items-center gap-1 rounded-lg border border-border bg-white p-1 w-fit">
+            {(
+              [
+                { id: 'details' as const, label: 'Candidate Details' },
+                { id: 'documents' as const, label: 'Required Documents' },
+              ]
+            ).map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+                  tab === t.id ? 'bg-primary text-primary-dark' : 'text-ink-soft hover:bg-black/5'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {tab === 'details' ? (
+            <FieldsTab sections={current.sections} readOnly onChange={() => {}} />
+          ) : (
+            <DocumentsTab documents={current.documents} readOnly onChange={() => {}} />
+          )}
+        </>
       )}
 
       {previewOpen && <PreviewModal template={current} onClose={() => setPreviewOpen(false)} />}
@@ -216,7 +227,7 @@ export function FormDetailPage({ startInEdit }: { startInEdit?: boolean }) {
               variant="danger"
               onClick={() => {
                 deleteTemplate(original.id);
-                navigate('/templates/forms');
+                navigate('/form-templates');
               }}
             >
               Delete

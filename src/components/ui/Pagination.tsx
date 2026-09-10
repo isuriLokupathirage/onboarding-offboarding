@@ -27,7 +27,7 @@ export function Pagination({
           onClick={() => onChange(p)}
           className={clsx(
             'h-7 w-7 rounded-md text-xs font-medium',
-            p === page ? 'bg-primary text-white' : 'text-ink-soft hover:bg-black/5',
+            p === page ? 'bg-primary text-primary-dark' : 'text-ink-soft hover:bg-black/5',
           )}
         >
           {p}

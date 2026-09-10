@@ -1,35 +1,46 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-primary: #f2762e;
-  --color-primary-dark: #d9611c;
-  --color-primary-light: #fdece0;
+  /* Accxis 360 brand tokens — mirrors Accxis360.App/src/styles/globals.css */
+  --color-primary: #fdb614; /* --amber-primary */
+  --color-primary-hover: #fbbf24; /* --amber-hover */
+  --color-primary-text: #d97706; /* --amber-600 — readable amber for links/icons/outlines */
+  --color-primary-dark: #282301; /* --dark-primary — text/buttons on amber fills */
+  --color-primary-light: #fffbeb; /* --amber-50 — light amber fill for badges/hovers */
+  --color-cream: #f6f2eb; /* --bg-light — main card bg */
 
-  --color-ink: #17181a;
-  --color-ink-soft: #4b4d52;
+  --color-ink: #282301;
+  --color-ink-soft: #374151;
   --color-muted: #6b7280;
   --color-subtle: #9ca3af;
 
-  --color-page: #f7f6f3;
+  --color-page: #f9f9f6;
   --color-card: #ffffff;
-  --color-border: #e7e5e1;
-  --color-border-soft: #eeece8;
+  --color-border: #e5e7eb;
+  --color-border-soft: #f3f4f6;
 
-  --color-sidebar: #1c1c1e;
-  --color-sidebar-soft: #2a2a2d;
-  --color-sidebar-text: #a9a9ad;
+  --color-sidebar: #ffffff;
+  --color-sidebar-soft: #f3f4f6;
+  --color-sidebar-active: #fdf1d3; /* pale cream nav-active pill, matches live app */
+  --color-sidebar-text: #4b5563;
+  --color-sidebar-border: #e5e7eb;
 
-  --color-danger: #dc2626;
-  --color-danger-bg: #fdeaea;
-  --color-warning: #d97706;
-  --color-warning-bg: #fef6e6;
+  --color-danger: #cc3636; /* --button-delete-text */
+  --color-danger-bg: #fbd5d5; /* --button-delete-bg */
+  --color-warning: #d97706; /* --amber-600 */
+  --color-warning-bg: #fef3c7; /* --amber-100 */
   --color-info: #2563eb;
   --color-info-bg: #eaf1fd;
-  --color-success: #16a34a;
-  --color-success-bg: #eaf7ee;
+  --color-success: #2b9348; /* --button-editing-text */
+  --color-success-bg: #d9f0e2; /* lightened --button-editing-hover */
+  --color-purple: #7c3aed;
+  --color-purple-bg: #ede9fe;
 
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial,
-    sans-serif;
+  --font-sans: 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+
+  /* Match the app's --radius: 0.5rem — shrink the 2xl utility we lean on for cards */
+  --radius-2xl: 0.75rem;
 }
 
 * {

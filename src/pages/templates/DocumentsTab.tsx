@@ -188,7 +188,7 @@ export function DocumentsTab({
                     key={r}
                     onClick={() => setDraft((d) => ({ ...d, requirement: r }))}
                     className={`px-3 py-1.5 text-xs font-medium capitalize ${
-                      draft.requirement === r ? 'bg-primary text-white' : 'bg-white text-ink-soft hover:bg-black/5'
+                      draft.requirement === r ? 'bg-primary text-primary-dark' : 'bg-white text-ink-soft hover:bg-black/5'
                     }`}
                   >
                     {r}
@@ -207,7 +207,7 @@ export function DocumentsTab({
                     key={opt.label}
                     onClick={() => setDraft((d) => ({ ...d, multiple: opt.v }))}
                     className={`px-3 py-1.5 text-xs font-medium ${
-                      draft.multiple === opt.v ? 'bg-primary text-white' : 'bg-white text-ink-soft hover:bg-black/5'
+                      draft.multiple === opt.v ? 'bg-primary text-primary-dark' : 'bg-white text-ink-soft hover:bg-black/5'
                     }`}
                   >
                     {opt.label}

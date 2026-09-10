@@ -59,7 +59,8 @@ export interface FormTemplate {
   id: string;
   code: string;
   name: string;
-  employmentType: EmploymentType;
+  description: string;
+  employmentTypes: EmploymentType[];
   status: 'Active' | 'Inactive';
   usedByTransitions: number;
   createdAt: string;
@@ -73,3 +74,33 @@ export const ACCEPTED_DOCUMENT_FORMATS = ['PDF', 'PNG', 'JPG', 'JPEG', 'DOCX'];
 export const DOCUMENT_SIZE_LIMIT_MB = 25;
 
 export type Permission = 'manager' | 'readonly';
+
+export type TransitionKind = 'Onboarding' | 'Offboarding';
+
+export interface TemplateTask {
+  id: string;
+  name: string;
+  phase: string;
+  assigneeRole: string;
+  dueOffsetDays: number;
+}
+
+export interface TransitionTemplate {
+  id: string;
+  name: string;
+  kind: TransitionKind;
+  company: string;
+  employmentType: EmploymentType;
+  status: 'Active' | 'Inactive';
+  createdAt: string;
+  updatedAt: string;
+  tasks: TemplateTask[];
+}
+
+export interface LibraryTask {
+  id: string;
+  name: string;
+  phase: string;
+  assigneeRole: string;
+  description: string;
+}
